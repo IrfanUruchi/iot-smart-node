@@ -1,0 +1,104 @@
+device:
+  id: "node-1"
+
+mqtt:
+  host: "host.docker.internal"   # dev: local broker
+  # host: "100.x.x.x"            # prod: tailscale / proxmox
+  port: 1883
+  use_tls: false
+  keepalive: 60
+
+topics:
+  command: "iot/nodes/{node_id}/commands"
+  broadcast: "iot/nodes/all/commands"
+  heartbeat: "iot/nodes/heartbeat"
+  status: "iot/nodes/status"
+  alerts: "iot/nodes/alerts"
+
+security:
+  token: "changeme"  
+  rate_limit_per_minute: 20
+  burst_limit: 5
+  burst_window_seconds: 5
+
+  allow_runtime_config_updates: true
+  allowed_runtime_update_prefixes:
+    - "limits."
+    - "services."
+
+limits:
+  max_cpu_before_deploy: 85
+  max_ram_before_deploy: 85
+  max_disk_before_deploy: 90
+
+  anomaly_cpu: 90
+  anomaly_ram: 90
+  anomaly_disk: 95
+
+  deploy_cooldown_seconds: 3
+  max_containers: 6
+
+heartbeat:
+  interval: 10
+
+docker:
+  network_mode: "bridge"
+  restart_policy: "unless-stopped"
+  self_heal: true
+  stop_timeout_seconds: 10
+  pull_before_run: true
+  pull_on_startup: true
+
+services:
+  integral-calculator:
+    image: "irfanuruchi/integral-calculator:latest"
+
+    ports:
+      - "5050:3000"
+
+    cpu_limit: 0.5
+    mem_limit: "256m"
+
+    read_only: false
+
+    env:
+      - "CEREBRAS_API_KEY=${CEREBRAS_API_KEY}"
+
+  promatch:
+    image: "irfanuruchi/promatch:latest"
+
+    ports:
+      - "3000:3000"
+
+    cpu_limit: 1.0
+    mem_limit: "512m"
+
+    read_only: false
+
+  fluidlab:
+    image: "irfanuruchi/fluid-lab-cfd:cpu"
+
+    ports:
+      - "8082:8000"
+
+    cpu_limit: 1.0
+    mem_limit: "1g"
+
+    shm_size: "2g"
+
+    read_only: false
+
+    env:
+      - "MPLCONFIGDIR=/tmp/matplotlib"
+
+  cnn-edge-classifier:
+    image: "irfanuruchi/cnn-edge-classifier:latest"
+
+    ports:
+      - "8600:8600"
+
+    cpu_limit: 1.0
+    mem_limit: "1g"
+
+    read_only: false
+  
